@@ -1,0 +1,11 @@
+{
+  "Nickname": "UD_Modifiers.ExcelToEsp",
+  "Visibility": "Visible",
+  "OneLineDescription": "Exports UD modifiers settings from an Excel file to ESP",
+  "LongDescription": "This can be either a new quest or an overwrite of an existing one. It can be in a separate ESP or as part of a patch.",
+  "PreferredAutoVersioning": "Default",
+  "RequiredMods": [],
+  "TargetedReleases": [
+    "SkyrimSE"
+  ]
+}

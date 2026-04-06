@@ -1,0 +1,11 @@
+{
+  "Nickname": "UD_Modifiers.EspToExcel",
+  "Visibility": "Visible",
+  "OneLineDescription": "Exports UD modifiers and its presets from ESP to xlsx file",
+  "LongDescription": "ATTENTION: This is not a patcher! \nThis is a tool for extracting settings from a specified quest (with UD device modifiers) into a readable Excel file format.",
+  "PreferredAutoVersioning": "Default",
+  "RequiredMods": [],
+  "TargetedReleases": [
+    "SkyrimSE"
+  ]
+}

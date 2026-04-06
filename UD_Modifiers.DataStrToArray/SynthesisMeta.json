@@ -1,0 +1,13 @@
+{
+  "Nickname": "",
+  "Visibility": "Visible",
+  "OneLineDescription": "Utility script for migrating properties",
+  "LongDescription": "A one-time patch to populate the new DataStr property from soon obsolete properties in UD_Patcher_ModPreset scripts.",
+  "PreferredAutoVersioning": "Default",
+  "RequiredMods": [
+    "UnforgivingDevices.esp"
+  ],
+  "TargetedReleases": [
+    "SkyrimSE"
+  ]
+}
