@@ -12,6 +12,7 @@ namespace UD_Modifiers.EspToExcel
     {
         [SettingName("Source Quest")]
         public PatchSettingsQuest Source { get; set; } = new();
+
         [SettingName("Target Excel File")]
         public PatchSettingsExcelFile Target { get; set; } = new();
     }

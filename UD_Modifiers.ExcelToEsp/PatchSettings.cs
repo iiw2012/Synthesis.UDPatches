@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UD_ModPreset.ExcelToEsp
+namespace UD_Modifiers.ExcelToEsp
 {
     public class PatchSettings
     {
@@ -40,11 +40,16 @@ namespace UD_ModPreset.ExcelToEsp
         [Tooltip("If the mod's name is not specified, or if it does not exist in the load order, the changes will be saved in the resulting patch. The file path is specified relative to the Skyrim's Data folder")]
         public string ModName { get; set; } = "UD_Import.esp";
 
+        [Tooltip("If the quest exists in the LoadOrder mods, an override will be created for it")]
         [SettingName("Quest EditorID")]
-        public string QuestEditorID { get; set; } = "UD_ModifierImport1_Quest";
+        public string QuestEditorID { get; set; } = "UD_ModifierSlots_Quest";
 
         [SettingName("UD Internal")]
         [Tooltip("May contain direct links to UD forms")]
         public bool UDInternal { get; set; } = true;
+
+        [SettingName("Trim Arrays")]
+        [Tooltip("If the last elements of the array are empty, they are not written to the form")]
+        public bool TrimArrays { get; set; } = true;
     }
 }

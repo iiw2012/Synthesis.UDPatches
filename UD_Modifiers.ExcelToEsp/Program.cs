@@ -1,6 +1,5 @@
 using ClosedXML.Excel;
 using CommandLine;
-using DocumentFormat.OpenXml.Spreadsheet;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -8,7 +7,6 @@ using Mutagen.Bethesda.Skyrim;
 using Mutagen.Bethesda.Synthesis;
 using Noggog;
 using System.Text.RegularExpressions;
-using UD_ModPreset.ExcelToEsp;
 
 namespace UD_Modifiers.ExcelToEsp
 {
@@ -328,7 +326,11 @@ namespace UD_Modifiers.ExcelToEsp
                                 }
                                 else if (prop_group.Any() && prop.Index > -1)
                                 {
-                                    var list_values = prop_group.OrderBy(_ => _.Index).Select(p => sheet.Cell(row, p.Column).GetString());
+                                    var list_values = prop_group.OrderBy(_ => _.Index).Select(p => sheet.Cell(row, p.Column).GetString().Trim());
+                                    if (Settings.Value.Target.TrimArrays)
+                                    {
+                                        list_values = list_values.Reverse().SkipWhile(_ => String.IsNullOrEmpty(_)).Reverse();
+                                    }
                                     switch (prop.Type.ToLower().Trim())
                                     {
                                         case "string":
