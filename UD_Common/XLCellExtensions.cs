@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ClosedXML.Excel
 {
-    internal static class XLCellExtensions
+    public static class XLCellExtensions
     {
         public static XLCellValue MergedValue(this IXLCell cell)
         {

@@ -1,5 +1,4 @@
 using ClosedXML.Excel;
-using CommandLine;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -7,6 +6,7 @@ using Mutagen.Bethesda.Skyrim;
 using Mutagen.Bethesda.Synthesis;
 using Noggog;
 using System.Text.RegularExpressions;
+using UD_Common;
 
 namespace UD_Modifiers.ExcelToEsp
 {
@@ -28,71 +28,98 @@ namespace UD_Modifiers.ExcelToEsp
             return script;
         }
 
-        private static void AddOrEditPropertyValue<TPropType>(ILinkCache cache, ScriptEntry script, string name, string? value = null, IEnumerable<string>? list_value = null)
-            where TPropType : ScriptProperty, new()
-        {            
-            ScriptProperty? prop = script.Properties.OfType<TPropType>().FirstOrDefault(_ => _.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        private static void AddOrEditPropertyValue(ILinkCache cache, ScriptEntry script, string name, string type, IEnumerable<string> values)
+        {
+            if (!values.Any())
+            {
+                throw new ArgumentException("An empty array with values", nameof(values));
+            }
+            try
+            {
+                ScriptProperty? prop = script.Properties.FirstOrDefault(_ => _.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-            if (prop == null)
-            {
-                prop = new TPropType { Name = name, Flags = ScriptProperty.Flag.Edited };
-                script.Properties.Add(prop);
-            }
-            if (typeof(TPropType) == typeof(ScriptStringProperty))
-            {
-                prop.Cast<ScriptStringProperty>().Data = value ?? "";
-            }
-            if (typeof(TPropType) == typeof(ScriptBoolProperty))
-            {
-                prop.Cast<ScriptBoolProperty>().Data = Convert.ToBoolean(value);
-            }
-            if (typeof(TPropType) == typeof(ScriptIntProperty))
-            {
-                prop.Cast<ScriptIntProperty>().Data = Convert.ToInt32(value);
-            }
-            if (typeof(TPropType) == typeof(ScriptFloatProperty))
-            {
-                prop.Cast<ScriptFloatProperty>().Data = Convert.ToSingle(value);
-            }
-            if (typeof(TPropType) == typeof(ScriptObjectProperty))
-            {
-                prop.Cast<ScriptObjectProperty>().Object = cache.Resolve<ISkyrimMajorRecordGetter>(value ?? "").ToLink();
-            }
-
-            if (typeof(TPropType) == typeof(ScriptStringListProperty))
-            {
-                prop.Cast<ScriptStringListProperty>().Data.Clear();
-                prop.Cast<ScriptStringListProperty>().Data.AddRange(list_value ?? []);
-            }
-            if (typeof(TPropType) == typeof(ScriptBoolListProperty))
-            {
-                prop.Cast<ScriptBoolListProperty>().Data.Clear();
-                prop.Cast<ScriptBoolListProperty>().Data.AddRange(list_value?.Select(_ => Convert.ToBoolean(_)) ?? []);
-            }
-            if (typeof(TPropType) == typeof(ScriptIntListProperty))
-            {
-                prop.Cast<ScriptIntListProperty>().Data.Clear();
-                prop.Cast<ScriptIntListProperty>().Data.AddRange(list_value?.Select(_ => Convert.ToInt32(_)) ?? []);
-            }
-            if (typeof(TPropType) == typeof(ScriptFloatListProperty))
-            {
-                prop.Cast<ScriptFloatListProperty>().Data.Clear();
-                prop.Cast<ScriptFloatListProperty>().Data.AddRange(list_value?.Select(_ => Convert.ToSingle(_)) ?? []);
-            }
-            if (typeof(TPropType) == typeof(ScriptObjectListProperty))
-            {
-                prop.Cast<ScriptObjectListProperty>().Objects.Clear();
-                prop.Cast<ScriptObjectListProperty>().Objects.AddRange(list_value?.Select(_ =>
+                if (type.Equals("string", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (cache.TryResolve<ISkyrimMajorRecordGetter>(_, out ISkyrimMajorRecordGetter? record))
+                    script.GetOrCreate<ScriptStringProperty>(name).Data = values.First();
+                }
+                else if (type.Equals("bool", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptBoolProperty>(name).Data = Convert.ToBoolean(values.First());
+                }
+                else if (type.Equals("int", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptIntProperty>(name).Data = Convert.ToInt32(values.First());
+                }
+                else if (type.Equals("float", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptFloatProperty>(name).Data = Convert.ToSingle(values.First());
+                }
+                else if (type.Equals("object", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptObjectProperty>(name).Object = cache.Resolve<ISkyrimMajorRecordGetter>(values.First()).ToLink();
+                }
+                else if (type.Equals("alias", StringComparison.OrdinalIgnoreCase))
+                {
+                    var quest_id = values.First().Split(":")[0];
+                    var alias_index = Convert.ToInt16(values.First().Split(":")[1]);
+
+                    script.GetOrCreate<ScriptObjectProperty>(name).Object = cache.Resolve<ISkyrimMajorRecordGetter>(quest_id ?? "").ToLink();
+                    script.GetOrCreate<ScriptObjectProperty>(name).Alias = alias_index;
+                }
+                else if (type.Equals("string[]", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptStringListProperty>(name).Data.Clear();
+                    script.GetOrCreate<ScriptStringListProperty>(name).Data.AddRange(values?.Select(_ => _) ?? []);
+                }
+                else if (type.Equals("bool[]", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptBoolListProperty>(name).Data.Clear();
+                    script.GetOrCreate<ScriptBoolListProperty>(name).Data.AddRange(values?.Select(_ => Convert.ToBoolean(_)) ?? []);
+                }
+                else if (type.Equals("int[]", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptIntListProperty>(name).Data.Clear();
+                    script.GetOrCreate<ScriptIntListProperty>(name).Data.AddRange(values?.Select(_ => Convert.ToInt32(_)) ?? []);
+                }
+                else if (type.Equals("float[]", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptFloatListProperty>(name).Data.Clear();
+                    script.GetOrCreate<ScriptFloatListProperty>(name).Data.AddRange(values?.Select(_ => Convert.ToSingle(_)) ?? []);
+                }
+                else if (type.Equals("form[]", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptObjectListProperty>(name).Objects.Clear();
+                    script.GetOrCreate<ScriptObjectListProperty>(name).Objects.AddRange(values?.Select(_ =>
                     {
-                        return new ScriptObjectProperty { Object = record.ToLink() };
-                    }
-                    else
+                        if (cache.TryResolve<ISkyrimMajorRecordGetter>(_, out ISkyrimMajorRecordGetter? record))
+                        {
+                            return new ScriptObjectProperty { Object = record.ToLink() };
+                        }
+                        else
+                        {
+                            return new ScriptObjectProperty { };
+                        }
+                    }) ?? []);
+                }
+                else if (type.Equals("alias[]", StringComparison.OrdinalIgnoreCase))
+                {
+                    script.GetOrCreate<ScriptObjectListProperty>(name).Objects.Clear();
+                    script.GetOrCreate<ScriptObjectListProperty>(name).Objects.AddRange(values?.Select(_ =>
                     {
-                        return new ScriptObjectProperty { };
-                    }
-                }) ?? []);
+                        if (cache.TryResolve<ISkyrimMajorRecordGetter>(_.Split(":")[0], out ISkyrimMajorRecordGetter? record))
+                        {
+                            return new ScriptObjectProperty { Object = record.ToLink(), Alias = Convert.ToInt16(_.Split(":")[1]) };
+                        }
+                        else
+                        {
+                            return new ScriptObjectProperty { };
+                        }
+                    }) ?? []);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\t\t\t\tException while converting value '{values.First()}' to type '{type}': {ex.Message}");
             }
         }
 
@@ -162,10 +189,10 @@ namespace UD_Modifiers.ExcelToEsp
                 quest_script = new ScriptEntry() { Name = "UD_ModifierStorage" };
                 quest.VirtualMachineAdapter.Scripts.Add(quest_script);
             }
-            AddOrEditPropertyValue<ScriptStringProperty>(state.LinkCache, quest_script, "MODULE_ALIAS", value: "MOD_UD");
+            AddOrEditPropertyValue(state.LinkCache, quest_script, "MODULE_ALIAS", "string", ["MOD_UD"]);
             if (Settings.Value.Target.UDInternal)
             {
-                AddOrEditPropertyValue<ScriptObjectListProperty>(state.LinkCache, quest_script, "MODULE_DEP", list_value: ["UD_ModifierManager_Quest"]);
+                AddOrEditPropertyValue(state.LinkCache, quest_script, "MODULE_DEP", "form[]", ["UD_ModifierManager_Quest"]);
             }
             quest.NextAliasID = quest.NextAliasID ?? 0;
 
@@ -277,52 +304,12 @@ namespace UD_Modifiers.ExcelToEsp
                                 if (prop_group.Count() == 1 && prop.Index == -1 && !prop.IsList && !sheet.Cell(row, prop.Column).IsEmpty())
                                 {
                                     var value = sheet.Cell(row, prop.Column).GetString();
-                                    switch (prop.Type.ToLower().Trim())
-                                    {
-                                        case "string":
-                                            AddOrEditPropertyValue<ScriptStringProperty>(state.LinkCache, alias_script, prop.Name, value: value);
-                                            break;
-                                        case "bool":
-                                            AddOrEditPropertyValue<ScriptBoolProperty>(state.LinkCache, alias_script, prop.Name, value: value);
-                                            break;
-                                        case "float":
-                                            AddOrEditPropertyValue<ScriptFloatProperty>(state.LinkCache, alias_script, prop.Name, value: value);
-                                            break;
-                                        case "integer":
-                                        case "int":
-                                            AddOrEditPropertyValue<ScriptIntProperty>(state.LinkCache, alias_script, prop.Name, value: value);
-                                            break;
-                                        case "form":
-                                            AddOrEditPropertyValue<ScriptObjectProperty>(state.LinkCache, alias_script, prop.Name, value: value);
-                                            break;
-                                        default:
-                                            break;
-                                    }
+                                    AddOrEditPropertyValue(state.LinkCache, alias_script, prop.Name, prop.Type.ToLower().Trim(), [value]);
                                 }
                                 else if (prop_group.Count() == 1 && prop.Index == -1 && prop.IsList && !sheet.Cell(row, prop.Column).IsEmpty())
                                 {
                                     var list_values = sheet.Cell(row, prop.Column).GetString().Split([",", "\n", "\r", "\r\n"], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-                                    switch (prop.Type.ToLower().Trim())
-                                    {
-                                        case "string list":
-                                            AddOrEditPropertyValue<ScriptStringListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        case "bool list":
-                                            AddOrEditPropertyValue<ScriptBoolListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        case "float list":
-                                            AddOrEditPropertyValue<ScriptFloatListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        case "integer list":
-                                        case "int list":
-                                            AddOrEditPropertyValue<ScriptIntListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        case "form list":
-                                            AddOrEditPropertyValue<ScriptObjectListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        default:
-                                            break;
-                                    }
+                                    AddOrEditPropertyValue(state.LinkCache, alias_script, prop.Name, prop.Type.ToLower().Trim(), list_values);
                                 }
                                 else if (prop_group.Any() && prop.Index > -1)
                                 {
@@ -331,27 +318,7 @@ namespace UD_Modifiers.ExcelToEsp
                                     {
                                         list_values = list_values.Reverse().SkipWhile(_ => String.IsNullOrEmpty(_)).Reverse();
                                     }
-                                    switch (prop.Type.ToLower().Trim())
-                                    {
-                                        case "string":
-                                            AddOrEditPropertyValue<ScriptStringListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        case "bool":
-                                            AddOrEditPropertyValue<ScriptBoolListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        case "float":
-                                            AddOrEditPropertyValue<ScriptFloatListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        case "integer":
-                                        case "int":
-                                            AddOrEditPropertyValue<ScriptIntListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        case "form":
-                                            AddOrEditPropertyValue<ScriptObjectListProperty>(state.LinkCache, alias_script, prop.Name, list_value: list_values);
-                                            break;
-                                        default:
-                                            break;
-                                    }
+                                    AddOrEditPropertyValue(state.LinkCache, alias_script, prop.Name, prop.Type.ToLower().Trim(), list_values);
                                 }
                             }
                             catch (Exception ex) 

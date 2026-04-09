@@ -1,96 +1,15 @@
 using ClosedXML.Excel;
-using CommandLine;
-using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Skyrim;
 using Mutagen.Bethesda.Synthesis;
 using Noggog;
 using System.Text.RegularExpressions;
-using Mutagen.Bethesda.Plugins.Exceptions;
+using UD_Common;
 
 namespace UD_Modifiers.EspToExcel
 {
     public class Program
     {
         static Lazy<PatchSettings> Settings = null!;
-
-        private static void PrintScriptProperties(IXLWorksheet sheet, int row, IScriptEntryGetter script, ScriptData header, ILinkCache cache)
-        {
-            foreach (var prop in script.Properties)
-            {
-                Console.WriteLine($"\t\t\tProcessing property '{prop.Name}'");
-                try
-                {
-                    var prop_data = header.Properties.ToLookup(_ => _.Name).FirstOrDefault(_ => _.Key.Equals(prop.Name, StringComparison.OrdinalIgnoreCase));
-                    if (prop_data == default)
-                    {
-                        Console.WriteLine($"\t\t\t\tCan't find given property in excel header.");
-                        continue;
-                    }
-                    if (prop is ScriptBoolProperty)
-                    {
-                        sheet.Cell(row, prop_data.First().Column).Value = (prop as dynamic).Data.ToString();
-                    }
-                    else if (prop is ScriptIntProperty || prop is ScriptFloatProperty || prop is ScriptStringProperty)
-                    {
-                        sheet.Cell(row, prop_data.First().Column).Value = (prop as dynamic).Data;
-                    }
-                    else if (prop is ScriptObjectProperty)
-                    {
-                        sheet.Cell(row, prop_data.First().Column).Value = cache.Resolve(prop.Cast<ScriptObjectProperty>().Object).EditorID;
-                    }
-                    else if (prop is ScriptBoolListProperty || prop is ScriptIntListProperty || prop is ScriptFloatListProperty || prop is ScriptStringListProperty)
-                    {
-                        if (prop_data.First().Index < 0)
-                        {
-                            // all elements in one cell
-                            sheet.Cell(row, prop_data.First().Column).Value = string.Join(", ", (prop as dynamic).Data.ToArray()).ToUpper();
-                        }
-                        else
-                        {
-                            // each element in a separate cell
-                            foreach (var prop_index in prop_data)
-                            {
-                                if ((prop as dynamic).Data.Count > prop_index.Index)
-                                {
-                                    sheet.Cell(row, prop_index.Column).Value = (prop as dynamic).Data[prop_index.Index];
-                                }
-                            }
-                        }
-                    }
-                    else if (prop is ScriptObjectListProperty)
-                    {
-                        if (prop_data.First().Index < 0)
-                        {
-                            // all elements in one cell
-                            sheet.Cell(row, prop_data.First().Column).Value = string.Join("\r\n", prop.Cast<ScriptObjectListProperty>().Objects.Select(_ => cache.Resolve(_.Object).EditorID));
-                        }
-                        else
-                        {
-                            // each element in a separate cell
-                            foreach (var prop_index in prop_data)
-                            {
-                                if (prop.Cast<ScriptObjectListProperty>().Objects.InRange(prop_index.Index))
-                                {
-                                    sheet.Cell(row, prop_index.Column).Value = cache.Resolve(prop.Cast<ScriptObjectListProperty>().Objects[prop_index.Index].Object).EditorID;
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (MissingRecordException mre)
-                {
-                    Console.WriteLine($"\t\t\t\t!MissingRecordException: editorId = {mre.EditorID}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"\t\t\t\t!Exception: {ex.Message}");
-                }
-            }
-        }
-        private static TType? _GetScriptProperty<TType>(IScriptEntryGetter script, string property_name) where TType : ScriptProperty
-        {
-            return script.Properties.FirstOrDefault(_ => _.Name.Equals(property_name, StringComparison.OrdinalIgnoreCase)) as TType;
-        }
 
         public static async Task<int> Main(string[] args)
         {
@@ -215,14 +134,14 @@ namespace UD_Modifiers.EspToExcel
                                     data = script_data.FirstOrDefault(_ => _.Value.ScriptType.Equals("Modifier Script", StringComparison.OrdinalIgnoreCase)).Value;
                                     // print into the first alias row
                                     sheet.Cell(alias_row, data.ScriptNameColumn).Value = alias_script.Name;
-                                    PrintScriptProperties(sheet, alias_row, alias_script, data, state.LinkCache);
+                                    data.PrintScriptProperties(sheet, alias_row, alias_script, state.LinkCache);
                                 }
                                 else if (alias_script.Properties.Any(_ => _.Name.Equals("DataStr", StringComparison.OrdinalIgnoreCase)))
                                 {
                                     // Preset Script
                                     data = script_data.FirstOrDefault(_ => _.Value.ScriptType.Equals("Patcher Preset Script", StringComparison.OrdinalIgnoreCase)).Value;
                                     sheet.Cell(row, data.ScriptNameColumn).Value = alias_script.Name;
-                                    PrintScriptProperties(sheet, row, alias_script, data, state.LinkCache);
+                                    data.PrintScriptProperties(sheet, row, alias_script, state.LinkCache);
                                     // next row;
                                     row++;
                                 }

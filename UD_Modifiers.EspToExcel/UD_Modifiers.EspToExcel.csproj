@@ -10,4 +10,8 @@
     <PackageReference Include="Mutagen.Bethesda.Skyrim" Version="0.53.1" />
     <PackageReference Include="Mutagen.Bethesda.Synthesis" Version="0.35.5" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UD_Common\UD_Common.csproj" />
+  </ItemGroup>
 </Project>
