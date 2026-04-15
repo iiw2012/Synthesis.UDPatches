@@ -1,6 +1,9 @@
 # Overview
 Synthesis patches related to the Unforgiving Devices (see https://github.com/IHateMyKite/UnforgivingDevices).
 
+## UD_Common
+Shared code library.
+
 ## UD_Modifiers.DataStrToArray
 A simple one-time-use patch.
 Copies values from the deprecated DataStr_*** properties to the new DataStr[] array property in UD_Patcher_ModPreset scripts.
@@ -18,12 +21,13 @@ A patch to perform the reverse operation - importing modifiers settings from an 
 ## Excel Format
 
 ### Types
-* string - The text in the cell is converted to a string property value
-* int, integer - The text in the cell is converted to a integer property value
-* float - The text in the cell is converted to a float property value
-* form - The text in the cell is converted to a from property value by its EditorId in from loaded modules.
-* string list, float list, int list - The text in the cell is split into elements by commas, converted to the appropriate type, and stored in an array property.
-* form list - The text in the cell is split into elements by \r\n, converted into links to forms based on the editorID, and stored in an array property.
+* string - The text in the cell is converted to/from a string property value
+* int - The text in the cell is converted to/from a integer property value
+* float - The text in the cell is converted to/from a float property value
+* form - The text in the cell is converted to/from a form property value by its EditorId in loaded modules
+* alias - The text in the cell is converted to/from an alias property value by its quest EditorId and name in loaded modules. Alias stored in cell in format like "<quest_editor_id>:<alias_name>"
+* string[], float[], int[] - The text in the cell is split into elements by commas, converted to the appropriate type, and stored in an array property
+* form[], alias[] - The text in the cell is split into elements by \r\n, converted into links to forms based on the editorID, and stored in an array property
 
 ### Special column names
 * Script Name - name of the script. To the right of this column, the script's properties are listed under the "Properties" merged cell.
