@@ -5,6 +5,7 @@ using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Skyrim;
 using Mutagen.Bethesda.Synthesis;
 using Noggog;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using UD_Common;
 
@@ -54,17 +55,18 @@ namespace UD_Modifiers.ExcelToEsp
                 {
                     script.GetOrCreate<ScriptFloatProperty>(name).Data = Convert.ToSingle(values.First());
                 }
-                else if (type.Equals("object", StringComparison.OrdinalIgnoreCase))
+                else if (type.Equals("form", StringComparison.OrdinalIgnoreCase))
                 {
                     script.GetOrCreate<ScriptObjectProperty>(name).Object = cache.Resolve<ISkyrimMajorRecordGetter>(values.First()).ToLink();
                 }
                 else if (type.Equals("alias", StringComparison.OrdinalIgnoreCase))
                 {
                     var quest_id = values.First().Split(":")[0];
-                    var alias_index = Convert.ToInt16(values.First().Split(":")[1]);
+                    var alias_name = values.First().Split(":")[1];
 
-                    script.GetOrCreate<ScriptObjectProperty>(name).Object = cache.Resolve<ISkyrimMajorRecordGetter>(quest_id ?? "").ToLink();
-                    script.GetOrCreate<ScriptObjectProperty>(name).Alias = alias_index;
+                    var record = cache.Resolve<ISkyrimMajorRecordGetter>(quest_id ?? "");
+                    script.GetOrCreate<ScriptObjectProperty>(name).Object = record.ToLink();
+                    script.GetOrCreate<ScriptObjectProperty>(name).Alias = (short)((record as IQuestGetter)?.Aliases.FirstOrDefault(_ => _.Name == alias_name)?.ID ?? (uint)0);
                 }
                 else if (type.Equals("string[]", StringComparison.OrdinalIgnoreCase))
                 {
@@ -108,7 +110,7 @@ namespace UD_Modifiers.ExcelToEsp
                     {
                         if (cache.TryResolve<ISkyrimMajorRecordGetter>(_.Split(":")[0], out ISkyrimMajorRecordGetter? record))
                         {
-                            return new ScriptObjectProperty { Object = record.ToLink(), Alias = Convert.ToInt16(_.Split(":")[1]) };
+                            return new ScriptObjectProperty { Object = record.ToLink(), Alias = (short)((record as IQuestGetter)?.Aliases.FirstOrDefault(a => a.Name == _.Split(":")[1])?.ID ?? (uint)0)};
                         }
                         else
                         {
@@ -303,16 +305,19 @@ namespace UD_Modifiers.ExcelToEsp
                             {
                                 if (prop_group.Count() == 1 && prop.Index == -1 && !prop.IsList && !sheet.Cell(row, prop.Column).IsEmpty())
                                 {
+                                // simple types like 'string', 'form'
                                     var value = sheet.Cell(row, prop.Column).GetString();
                                     AddOrEditPropertyValue(state.LinkCache, alias_script, prop.Name, prop.Type.ToLower().Trim(), [value]);
                                 }
                                 else if (prop_group.Count() == 1 && prop.Index == -1 && prop.IsList && !sheet.Cell(row, prop.Column).IsEmpty())
                                 {
+                                // arrays with inline elements seprated with ',' or '\r\n'
                                     var list_values = sheet.Cell(row, prop.Column).GetString().Split([",", "\n", "\r", "\r\n"], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                                     AddOrEditPropertyValue(state.LinkCache, alias_script, prop.Name, prop.Type.ToLower().Trim(), list_values);
                                 }
                                 else if (prop_group.Any() && prop.Index > -1)
                                 {
+                                // arrays with elements in separated columns
                                     var list_values = prop_group.OrderBy(_ => _.Index).Select(p => sheet.Cell(row, p.Column).GetString().Trim());
                                     if (Settings.Value.Target.TrimArrays)
                                     {
