@@ -136,7 +136,7 @@ namespace UD_Modifiers.EspToExcel
                                     sheet.Cell(alias_row, data.ScriptNameColumn).Value = alias_script.Name;
                                     data.PrintScriptProperties(sheet, alias_row, alias_script, state.LinkCache);
                                 }
-                                else if (alias_script.Properties.Any(_ => _.Name.Equals("DataStr", StringComparison.OrdinalIgnoreCase)))
+                                else if (alias_script.Properties.Any(_ => _.Name.StartsWith("DataStr", StringComparison.OrdinalIgnoreCase)))
                                 {
                                     // Preset Script
                                     data = script_data.FirstOrDefault(_ => _.Value.ScriptType.Equals("Patcher Preset Script", StringComparison.OrdinalIgnoreCase)).Value;
