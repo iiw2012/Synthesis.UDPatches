@@ -352,5 +352,9 @@ MigrationBackup/
 .idea/
 *.sln.iml
 
-# MS Office tmp files
+# MS Office tmp and user files
 ~$*
+*.xlsx
+# Except templates
+!/UD_Modifiers.EspToExcel/Data/UD_Empty.xlsx
+!/UD_CustomDevices.EspToExcel/Data/UD_DevicesEmpty.xlsx
